@@ -42,19 +42,14 @@ class Base_Scene extends Scene {
             plastic: new Material(new defs.Phong_Shader(),
                 {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
         };
-        // The white material and basic shader are used for drawing the outline.
-        this.white = new Material(new defs.Basic_Shader());
     }
 
     display(context, program_state) {
-        // display():  Called once per frame of animation. Here, the base class's display only does
-        // some initial setup.
-
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
-            program_state.set_camera(Mat4.translation(5, -10, -30));
+            program_state.set_camera(Mat4.translation(0, 10, 30));
         }
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, 1, 100);
@@ -78,37 +73,54 @@ export class Assignment2 extends Base_Scene {
         this.backward = 0;
         this.right = 0;
         this.left = 0;
+        this.lane = [];
+        this.speed = [];
+        
+        for (let i = 0; i < 50; i++) {
+            let a = Math.random();
+            if (a > 0.50){
+                this.lane[i] = 1                
+            }
+            else {
+                this.lane[i] = -1
+            }
+        }
+
+        for (let i = 0; i < 50; i++) {
+            let a = Math.random();
+            this.speed[i] = a;
+        }
     }
 
-    make_control_panel() {
+    make_control_panel(program_state) {
         // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
         this.key_triggered_button("W", ["y"], () => {
-            this.forward += 0.3;
+            this.forward += 2;
         });
         this.key_triggered_button("A", ["g"], () => {
-            this.left += 0.3;
+            this.left += 2;
         });
         this.key_triggered_button("S", ["h"], () => {
-            this.backward += 0.3;
+            this.backward += 2;
         });
         this.key_triggered_button("D", ["j"], () => {
-            this.right += 0.3;
+            this.right += 2;
         });
     }
 
     draw_box(context, program_state, model_transform) {
         const blue = hex_color("#1a9ffa");        
         let t = program_state.animation_time/1000;
-        model_transform = Mat4.translation(5 + (this.right - this.left), (this.forward - this.backward), 0).times(model_transform);
+        model_transform = Mat4.translation((this.right - this.left), (this.forward - this.backward), 0).times(model_transform);
         this.shapes.cube.draw(context, program_state, model_transform, 
                                   this.materials.plastic.override({color: blue}));
         return model_transform;
     }
 
-    draw_scooter(context, program_state, model_transform) {
-        const yellow = hex_color("#ffff00");        
+    draw_scooter(context, program_state, model_transform, lane, dir, speed) {
+        const yellow = hex_color("#ffff00");
         let t = program_state.animation_time/1000;
-        model_transform = Mat4.translation(0 - 3 * t, 5, 0);
+        model_transform = Mat4.translation(dir * (25 - 5 * speed * t), 2 * lane, 0);
         this.shapes.cube.draw(context, program_state, model_transform, 
                                   this.materials.plastic.override({color: yellow}));
         return model_transform;
@@ -117,9 +129,21 @@ export class Assignment2 extends Base_Scene {
     display(context, program_state) {
         super.display(context, program_state);
         let model_transform = Mat4.identity();
-        // Example for drawing a cube, you can remove this line if needed
+        // Example for drawing a cube, you can remove this line if needed\
+        let desired = Mat4.inverse(Mat4.translation((this.right - this.left), 10 + (this.forward - this.backward), 30).times(model_transform));
+        program_state.set_camera(desired);
         model_transform = this.draw_box(context, program_state, model_transform);
-        model_transform = this.draw_scooter(context, program_state, model_transform);
+        for (let i = 1; i < 51; i++) {
+            if (i !== 5){
+                let speed = this.speed[i];
+                //console.log(speed);
+                let dir = this.lane[i];
+                //console.log(dir)
+                model_transform = this.draw_scooter(context, program_state, model_transform, i, dir, speed);
+            }
+        }
+
+
         // TODO:  Draw your entire scene here.  Use this.draw_box( graphics_state, model_transform ) to call your helper.
     }
 }

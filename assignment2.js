@@ -75,7 +75,7 @@ export class Assignment2 extends Base_Scene {
         this.left = 0;
         this.lane = [];
         this.speed = [];
-        
+
         for (let i = 0; i < 50; i++) {
             let a = Math.random();
             if (a > 0.50){
@@ -114,6 +114,8 @@ export class Assignment2 extends Base_Scene {
         model_transform = Mat4.translation((this.right - this.left), (this.forward - this.backward), 0).times(model_transform);
         this.shapes.cube.draw(context, program_state, model_transform, 
                                   this.materials.plastic.override({color: blue}));
+        this.box_x = this.right - this.left;
+        this.box_y = this.forward - this.backward;
         return model_transform;
     }
 
@@ -123,9 +125,33 @@ export class Assignment2 extends Base_Scene {
         model_transform = Mat4.translation(dir * (25 - 5 * speed * t), 2 * lane, 0);
         this.shapes.cube.draw(context, program_state, model_transform, 
                                   this.materials.plastic.override({color: yellow}));
+        this.scooter_pos.push(dir * (25 - 5 * speed * t));
+        this.scooter_pos.push(2 * lane);
+        // console.log(this.scooter_pos);
         return model_transform;
     }
-    
+
+    collide(cube1_center_x, cube1_center_y, cube2_center_x, cube2_center_y){
+        let cube1_top_left_x = cube1_center_x - 1;
+        let cube1_top_left_y = cube1_center_y + 1;
+        let cube1_bot_right_x = cube1_center_x + 1;
+        let cube1_bot_right_y = cube1_center_y - 1;
+        let cube2_top_left_x = cube2_center_x - 1;
+        let cube2_top_left_y = cube2_center_y + 1;
+        let cube2_bot_right_x = cube2_center_x + 1;
+        let cube2_bot_right_y = cube2_center_y - 1;
+
+        // If one cube is on the left of the other
+        if (cube1_top_left_x >= cube2_bot_right_x || cube2_top_left_x >= cube1_bot_right_x)
+            return false;
+
+        // If one cube is above the other
+        if (cube1_bot_right_y >= cube2_top_left_y || cube2_bot_right_y >= cube1_top_left_y)
+            return false;
+
+        return true;
+    }
+
     display(context, program_state) {
         super.display(context, program_state);
         let model_transform = Mat4.identity();
@@ -133,17 +159,19 @@ export class Assignment2 extends Base_Scene {
         let desired = Mat4.inverse(Mat4.translation((this.right - this.left), 10 + (this.forward - this.backward), 30).times(model_transform));
         program_state.set_camera(desired);
         model_transform = this.draw_box(context, program_state, model_transform);
+        this.scooter_pos = [];
         for (let i = 1; i < 51; i++) {
             if (i !== 5){
                 let speed = this.speed[i];
-                //console.log(speed);
                 let dir = this.lane[i];
-                //console.log(dir)
                 model_transform = this.draw_scooter(context, program_state, model_transform, i, dir, speed);
             }
         }
 
-
-        // TODO:  Draw your entire scene here.  Use this.draw_box( graphics_state, model_transform ) to call your helper.
+        // Collision detection
+        for (let i = 0; i < this.scooter_pos.length; i += 2) {
+            if (this.collide(this.box_x, this.box_y, this.scooter_pos[i], this.scooter_pos[i+1]))
+                console.log('Collision detected!')
+        }
     }
 }

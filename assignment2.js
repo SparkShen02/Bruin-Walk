@@ -75,6 +75,7 @@ export class Assignment2 extends Base_Scene {
         this.left = 0;
         this.lane = [];
         this.speed = [];
+        this.dead = false;
 
         for (let i = 0; i < 50; i++) {
             let a = Math.random();
@@ -86,9 +87,9 @@ export class Assignment2 extends Base_Scene {
             }
         }
 
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < 50; i++) { 
             let a = Math.random();
-            this.speed[i] = a;
+            this.speed[i] = a + 0.5;
         }
     }
 
@@ -121,11 +122,12 @@ export class Assignment2 extends Base_Scene {
 
     draw_scooter(context, program_state, model_transform, lane, dir, speed) {
         const yellow = hex_color("#ffff00");
-        let t = program_state.animation_time/1000;
-        model_transform = Mat4.translation(dir * (25 - 5 * speed * t), 2 * lane, 0);
+        let time = program_state.animation_time/1000;
+        let t = time % (52 / (speed * 10));
+        model_transform = Mat4.translation(0 + dir * (25 - speed * 10 * t), 2 * lane, 0);
         this.shapes.cube.draw(context, program_state, model_transform, 
                                   this.materials.plastic.override({color: yellow}));
-        this.scooter_pos.push(dir * (25 - 5 * speed * t));
+        this.scooter_pos.push(0 + dir * (25 - speed * 10 * t));
         this.scooter_pos.push(2 * lane);
         // console.log(this.scooter_pos);
         return model_transform;
@@ -156,22 +158,25 @@ export class Assignment2 extends Base_Scene {
         super.display(context, program_state);
         let model_transform = Mat4.identity();
         // Example for drawing a cube, you can remove this line if needed\
-        let desired = Mat4.inverse(Mat4.translation((this.right - this.left), 10 + (this.forward - this.backward), 30).times(model_transform));
+        let desired = Mat4.inverse(Mat4.translation(0, 10 + (this.forward - this.backward), 30).times(model_transform));
         program_state.set_camera(desired);
-        model_transform = this.draw_box(context, program_state, model_transform);
-        this.scooter_pos = [];
-        for (let i = 1; i < 51; i++) {
-            if (i !== 5){
-                let speed = this.speed[i];
-                let dir = this.lane[i];
-                model_transform = this.draw_scooter(context, program_state, model_transform, i, dir, speed);
+        if (this.dead === false){
+            model_transform = this.draw_box(context, program_state, model_transform);
+            this.scooter_pos = [];
+            for (let i = 0; i < 50; i++) {
+                if (i !== 5){
+                    let speed = this.speed[i];
+                    let dir = this.lane[i];
+                    model_transform = this.draw_scooter(context, program_state, model_transform, i + 1, dir, speed);
+                }
             }
-        }
-
-        // Collision detection
-        for (let i = 0; i < this.scooter_pos.length; i += 2) {
-            if (this.collide(this.box_x, this.box_y, this.scooter_pos[i], this.scooter_pos[i+1]))
-                console.log('Collision detected!')
+            // Collision detection
+            for (let i = 0; i < this.scooter_pos.length; i += 2) {
+                if (this.collide(this.box_x, this.box_y, this.scooter_pos[i], this.scooter_pos[i+1])){
+                    console.log('Collision detected!');
+                    this.dead = true;                
+                }
+            }
         }
     }
 }

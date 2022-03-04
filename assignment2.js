@@ -49,7 +49,9 @@ class Base_Scene extends Scene {
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
-            program_state.set_camera(Mat4.translation(0, 10, 30));
+            program_state.set_camera(Mat4.translation(0.3, -5, -22)
+                                     .times(Mat4.rotation(-0.25 * Math.PI, 1, 0, 0))
+                                     .times(Mat4.rotation(-0.14 * Math.PI, 0, 0, 1)));
         }
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, 1, 100);
@@ -112,7 +114,7 @@ export class Assignment2 extends Base_Scene {
     draw_box(context, program_state, model_transform) {
         const blue = hex_color("#1a9ffa");        
         let t = program_state.animation_time/1000;
-        model_transform = Mat4.translation((this.right - this.left), (this.forward - this.backward), 0).times(model_transform);
+        model_transform = Mat4.translation((this.right - this.left), (this.forward - this.backward), 0);
         this.shapes.cube.draw(context, program_state, model_transform, 
                                   this.materials.plastic.override({color: blue}));
         this.box_x = this.right - this.left;
@@ -124,7 +126,7 @@ export class Assignment2 extends Base_Scene {
         const yellow = hex_color("#ffff00");
         let time = program_state.animation_time/1000;
         let t = time % (52 / (speed * 10));
-        model_transform = Mat4.translation(0 + dir * (25 - speed * 10 * t), 2 * lane, 0);
+        model_transform = Mat4.translation(-10 + dir * (25 - speed * 10 * t), 2 * lane, 0);
         this.shapes.cube.draw(context, program_state, model_transform, 
                                   this.materials.plastic.override({color: yellow}));
         this.scooter_pos.push(0 + dir * (25 - speed * 10 * t));
@@ -157,8 +159,11 @@ export class Assignment2 extends Base_Scene {
     display(context, program_state) {
         super.display(context, program_state);
         let model_transform = Mat4.identity();
-        // Example for drawing a cube, you can remove this line if needed\
-        let desired = Mat4.inverse(Mat4.translation(0, 10 + (this.forward - this.backward), 30).times(model_transform));
+        // Example for drawing a cube, you can remove this line if needed
+        let desired = Mat4.translation(0.3, -5, -22)
+                            .times(Mat4.rotation(-0.25 * Math.PI, 1, 0, 0))
+                            .times(Mat4.rotation(-0.14 * Math.PI, 0, 0, 1))
+        desired = desired.times(Mat4.translation(0, -(this.forward - this.backward), 0))
         program_state.set_camera(desired);
         if (this.dead === false){
             model_transform = this.draw_box(context, program_state, model_transform);
@@ -174,7 +179,7 @@ export class Assignment2 extends Base_Scene {
             for (let i = 0; i < this.scooter_pos.length; i += 2) {
                 if (this.collide(this.box_x, this.box_y, this.scooter_pos[i], this.scooter_pos[i+1])){
                     console.log('Collision detected!');
-                    this.dead = true;                
+                    //this.dead = true;                
                 }
             }
         }

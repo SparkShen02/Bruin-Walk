@@ -71,6 +71,12 @@ export class Assignment2 extends Base_Scene {
      */
     constructor() {
         super();
+        this.buffer = 0;
+        this.forward_distance_y = 0;
+        this.forward_distance_z = 0;
+        
+        this.start_time = -1;
+        this.move_forward = false;
         this.forward = 0;
         this.backward = 0;
         this.right = 0;
@@ -99,6 +105,7 @@ export class Assignment2 extends Base_Scene {
         // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
         this.key_triggered_button("W", ["y"], () => {
             this.forward += 2;
+            this.move_forward = true;
         });
         this.key_triggered_button("A", ["g"], () => {
             this.left += 2;
@@ -113,10 +120,25 @@ export class Assignment2 extends Base_Scene {
 
     draw_box(context, program_state, model_transform) {
         const blue = hex_color("#1a9ffa");        
-        let t = program_state.animation_time/1000;
-        model_transform = Mat4.translation((this.right - this.left), (this.forward - this.backward), 0);
+        if (this.move_forward === true){
+            let t = program_state.animation_time/1000;
+            if (this.start_time === -1){
+                this.start_time = t;
+            }
+            this.forward_distance_y += (t - this.start_time) * 0.1;
+            let count = this.forward_distance_y - this.buffer
+            this.forward_distance_z = 3 * count - 1.5 * count * count;
+            if (count >= 2){
+                this.move_forward = false;
+                this.start_time = -1;
+            }
+        }
+        else {
+            this.buffer = this.forward_distance_y;
+        }
+        model_transform = model_transform.times(Mat4.translation(0, this.forward_distance_y, this.forward_distance_z));
         this.shapes.cube.draw(context, program_state, model_transform, 
-                                  this.materials.plastic.override({color: blue}));
+                                this.materials.plastic.override({color: blue}));        
         this.box_x = this.right - this.left;
         this.box_y = this.forward - this.backward;
         return model_transform;
@@ -128,7 +150,7 @@ export class Assignment2 extends Base_Scene {
         let t = time % (52 / (speed * 10));
         model_transform = Mat4.translation(-10 + dir * (25 - speed * 10 * t), 2 * lane, 0);
         this.shapes.cube.draw(context, program_state, model_transform, 
-                                  this.materials.plastic.override({color: yellow}));
+                                this.materials.plastic.override({color: yellow}));
         this.scooter_pos.push(0 + dir * (25 - speed * 10 * t));
         this.scooter_pos.push(2 * lane);
         // console.log(this.scooter_pos);
@@ -164,7 +186,7 @@ export class Assignment2 extends Base_Scene {
                             .times(Mat4.rotation(-0.25 * Math.PI, 1, 0, 0))
                             .times(Mat4.rotation(-0.14 * Math.PI, 0, 0, 1))
         desired = desired.times(Mat4.translation(0, -(this.forward - this.backward), 0))
-        program_state.set_camera(desired);
+        //program_state.set_camera(desired);
         if (this.dead === false){
             model_transform = this.draw_box(context, program_state, model_transform);
             this.scooter_pos = [];

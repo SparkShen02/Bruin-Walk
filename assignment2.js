@@ -71,12 +71,19 @@ export class Assignment2 extends Base_Scene {
      */
     constructor() {
         super();
-        this.buffer = 0;
-        this.forward_distance_y = 0;
-        this.forward_distance_z = 0;
-        
+        this.buffer_x = 0;
+        this.buffer_y = 0;
+        this.distance_x = 0;
+        this.distance_y = 0;
+        this.distance_z_x = 0;
+        this.distance_z_y = 0;
+
         this.start_time = -1;
         this.move_forward = false;
+        this.move_backward = false;
+        this.move_right = false;
+        this.move_left = false;
+        
         this.forward = 0;
         this.backward = 0;
         this.right = 0;
@@ -104,39 +111,73 @@ export class Assignment2 extends Base_Scene {
     make_control_panel(program_state) {
         // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
         this.key_triggered_button("W", ["y"], () => {
-            this.forward += 2;
+            this.forward += 2.5;
             this.move_forward = true;
         });
         this.key_triggered_button("A", ["g"], () => {
-            this.left += 2;
+            this.left += 2.5;
+            this.move_left = true;
         });
         this.key_triggered_button("S", ["h"], () => {
-            this.backward += 2;
+            this.backward += 2.5;
+            this.move_backward = true;
         });
         this.key_triggered_button("D", ["j"], () => {
-            this.right += 2;
+            this.right += 2.5;
+            this.move_right = true;
         });
     }
 
     draw_box(context, program_state, model_transform) {
         const blue = hex_color("#1a9ffa");        
-        if (this.move_forward === true){
+        if (this.move_forward === true || this.move_backward === true
+            || this.move_left === true || this.move_right === true){
             let t = program_state.animation_time/1000;
             if (this.start_time === -1){
                 this.start_time = t;
             }
-            this.forward_distance_y += (t - this.start_time) * 0.1;
-            let count = this.forward_distance_y - this.buffer
-            this.forward_distance_z = 3 * count - 1.5 * count * count;
-            if (count >= 2){
+            
+            if (this.move_forward === true){
+                this.distance_y += (t - this.start_time) * 1;
+            }
+            else if (this.move_backward === true){
+                this.distance_y -= (t - this.start_time) * 1;
+            }
+            else if (this.move_right === true) {
+                this.distance_x += (t - this.start_time) * 1;
+            }
+            else if (this.move_left === true) {
+                this.distance_x -= (t - this.start_time) * 1;
+            }
+            let count_x = Math.abs(this.distance_x - this.buffer_x);
+            let count_y = Math.abs(this.distance_y - this.buffer_y);
+            this.distance_z_x = (2.5 * count_x - count_x * count_x) * 2;
+            this.distance_z_y = (2.5 * count_y - count_y * count_y) * 2;
+            if (count_y >= 2.5 || count_x >= 2.5){
+                if (this.move_forward === true || this.move_right === true){
+                    this.distance_x = (Math.floor(this.distance_x / 2.5)) * 2.5;
+                    this.distance_y = (Math.floor(this.distance_y / 2.5)) * 2.5;
+                }
+                else {
+                    this.distance_x = (Math.ceil(this.distance_x / 2.5)) * 2.5;
+                    this.distance_y = (Math.ceil(this.distance_y / 2.5)) * 2.5;
+                }
+                this.distance_z_x = 0;
+                this.distance_z_y = 0;
                 this.move_forward = false;
+                this.move_backward = false;
+                this.move_right = false;
+                this.move_left = false;
                 this.start_time = -1;
             }
         }
         else {
-            this.buffer = this.forward_distance_y;
+            this.buffer_x = this.distance_x;
+            this.buffer_y = this.distance_y;
         }
-        model_transform = model_transform.times(Mat4.translation(0, this.forward_distance_y, this.forward_distance_z));
+
+        model_transform = model_transform
+            .times(Mat4.translation(this.distance_x, this.distance_y, this.distance_z_x + this.distance_z_y));
         this.shapes.cube.draw(context, program_state, model_transform, 
                                 this.materials.plastic.override({color: blue}));        
         this.box_x = this.right - this.left;
@@ -148,7 +189,7 @@ export class Assignment2 extends Base_Scene {
         const yellow = hex_color("#ffff00");
         let time = program_state.animation_time/1000;
         let t = time % (52 / (speed * 10));
-        model_transform = Mat4.translation(-10 + dir * (25 - speed * 10 * t), 2 * lane, 0);
+        model_transform = Mat4.translation(-10 + dir * (25 - speed * 10 * t), 2.5 * lane, 0);
         this.shapes.cube.draw(context, program_state, model_transform, 
                                 this.materials.plastic.override({color: yellow}));
         this.scooter_pos.push(0 + dir * (25 - speed * 10 * t));
@@ -184,9 +225,9 @@ export class Assignment2 extends Base_Scene {
         // Example for drawing a cube, you can remove this line if needed
         let desired = Mat4.translation(0.3, -5, -22)
                             .times(Mat4.rotation(-0.25 * Math.PI, 1, 0, 0))
-                            .times(Mat4.rotation(-0.14 * Math.PI, 0, 0, 1))
-        desired = desired.times(Mat4.translation(0, -(this.forward - this.backward), 0))
-        //program_state.set_camera(desired);
+                            .times(Mat4.rotation(-0.14 * Math.PI, 0, 0, 1));
+        desired = desired.times(Mat4.translation(0, -this.distance_y, 0));
+        program_state.set_camera(desired);
         if (this.dead === false){
             model_transform = this.draw_box(context, program_state, model_transform);
             this.scooter_pos = [];

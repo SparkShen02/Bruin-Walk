@@ -84,13 +84,13 @@ export class Assignment2 extends Base_Scene {
         this.move_right = false;
         this.move_left = false;
         
-        this.forward = 0;
-        this.backward = 0;
         this.right = 0;
         this.left = 0;
         this.lane = [];
         this.speed = [];
         this.dead = false;
+
+        this.first_frame = true;
 
         for (let i = 0; i < 50; i++) {
             let a = Math.random();
@@ -111,7 +111,6 @@ export class Assignment2 extends Base_Scene {
     make_control_panel(program_state) {
         // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
         this.key_triggered_button("W", ["y"], () => {
-            this.forward += 2.5;
             this.move_forward = true;
         });
         this.key_triggered_button("A", ["g"], () => {
@@ -119,7 +118,6 @@ export class Assignment2 extends Base_Scene {
             this.move_left = true;
         });
         this.key_triggered_button("S", ["h"], () => {
-            this.backward += 2.5;
             this.move_backward = true;
         });
         this.key_triggered_button("D", ["j"], () => {
@@ -180,8 +178,9 @@ export class Assignment2 extends Base_Scene {
             .times(Mat4.translation(this.distance_x, this.distance_y, this.distance_z_x + this.distance_z_y));
         this.shapes.cube.draw(context, program_state, model_transform, 
                                 this.materials.plastic.override({color: blue}));        
-        this.box_x = this.right - this.left;
-        this.box_y = this.forward - this.backward;
+        this.box_x = this.distance_x;
+        this.box_y = this.distance_y;
+        this.box_z = this.distance_z_x + this.distance_z_y;
         return model_transform;
     }
 
@@ -189,16 +188,22 @@ export class Assignment2 extends Base_Scene {
         const yellow = hex_color("#ffff00");
         let time = program_state.animation_time/1000;
         let t = time % (52 / (speed * 10));
-        model_transform = Mat4.translation(-10 + dir * (25 - speed * 10 * t), 2.5 * lane, 0);
+        const x_trans = -10 + dir * (25 - speed * 10 * t);
+        const y_trans = 2.5 * lane;
+        model_transform = Mat4.translation(x_trans, y_trans, 0);
         this.shapes.cube.draw(context, program_state, model_transform, 
                                 this.materials.plastic.override({color: yellow}));
-        this.scooter_pos.push(0 + dir * (25 - speed * 10 * t));
-        this.scooter_pos.push(2 * lane);
+        this.scooter_pos.push(x_trans);
+        this.scooter_pos.push(y_trans);
         // console.log(this.scooter_pos);
         return model_transform;
     }
 
-    collide(cube1_center_x, cube1_center_y, cube2_center_x, cube2_center_y){
+    collide(cube1_center_x, cube1_center_y, cube1_center_z, cube2_center_x, cube2_center_y){
+        // If one cube is on top of the other (z direction)
+        if (cube1_center_z > 2)
+            return false;
+
         let cube1_top_left_x = cube1_center_x - 1;
         let cube1_top_left_y = cube1_center_y + 1;
         let cube1_bot_right_x = cube1_center_x + 1;
@@ -208,11 +213,11 @@ export class Assignment2 extends Base_Scene {
         let cube2_bot_right_x = cube2_center_x + 1;
         let cube2_bot_right_y = cube2_center_y - 1;
 
-        // If one cube is on the left of the other
+        // If one cube is on the left of the other (x direction)
         if (cube1_top_left_x >= cube2_bot_right_x || cube2_top_left_x >= cube1_bot_right_x)
             return false;
 
-        // If one cube is above the other
+        // If one cube is above the other (y direction)
         if (cube1_bot_right_y >= cube2_top_left_y || cube2_bot_right_y >= cube1_top_left_y)
             return false;
 
@@ -238,13 +243,25 @@ export class Assignment2 extends Base_Scene {
                     model_transform = this.draw_scooter(context, program_state, model_transform, i + 1, dir, speed);
                 }
             }
-            // Collision detection
-            for (let i = 0; i < this.scooter_pos.length; i += 2) {
-                if (this.collide(this.box_x, this.box_y, this.scooter_pos[i], this.scooter_pos[i+1])){
-                    console.log('Collision detected!');
-                    //this.dead = true;                
+
+            if (!this.first_frame) {
+                // Collision detection (using the last frame due to display latency)
+                for (let i = 0; i < this.last_scooter_pos.length; i += 2) {
+                    if (this.collide(this.last_box_x, this.last_box_y, this.last_box_z, this.last_scooter_pos[i], this.last_scooter_pos[i+1])){
+                        alert('Collision detected!');
+                        this.dead = true;
+                    }
                 }
             }
+            else {
+                this.first_frame = false;
+            }
+
+            // Record the last frame
+            this.last_box_x = this.box_x;
+            this.last_box_y = this.box_y;
+            this.last_box_z = this.box_z;
+            this.last_scooter_pos = this.scooter_pos;
         }
     }
 }

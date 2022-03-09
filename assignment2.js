@@ -4,8 +4,6 @@ const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene,
 } = tiny;
 
-const num_lanes = 19;
-
 class Cube extends Shape {
     constructor() {
         super("position", "normal",);
@@ -73,58 +71,65 @@ export class Assignment2 extends Base_Scene {
     constructor() {
         super();
 
-        this.safe_roads = [];
-        for (let i = 0; i < num_lanes; i++) {
-            let choice = Math.floor(Math.random() * 5) + 1; // random between 1 and 5
-            this.safe_roads[i] = (choice === 1);
+        // Lanes-related attributes
+        this.start_lane = 0;
+        this.end_lane = 19;
+        this.safe = [];
+        this.dir = [];
+        this.speed = [];
+        for (let i = this.start_lane; i <= this.end_lane; i++) {
+            this.set_lane(i);
         }
 
+        // Player-related attributes
+        this.score = 0;
+        this.dead = false;
         this.buffer_x = 0;
         this.buffer_y = 0;
         this.distance_x = 0;
         this.distance_y = 0;
         this.distance_z_x = 0;
         this.distance_z_y = 0;
-
         this.start_time = -1;
         this.move_forward = false;
         this.move_backward = false;
         this.move_right = false;
         this.move_left = false;
-        
-        this.right = 0;
-        this.left = 0;
-        this.lane = [];
-        this.speed = [];
-        this.dead = false;
-        for (let i = 0; i < num_lanes; i++) {
-            let a = Math.random();
-            this.lane[i] = (a > 0.5) ? 1 : -1;
-        }
-        for (let i = 0; i < num_lanes; i++) {
-            let a = Math.random();
-            this.speed[i] = a + 0.5;
-        }
 
+        // Frame-related attribute
         this.first_frame = true;
     }
 
-    make_control_panel(program_state) {
+    make_control_panel() {
         // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
         this.key_triggered_button("W", ["y"], () => {
             this.move_forward = true;
+            this.score += 1;
+            this.end_lane += 1;
+            this.set_lane(this.end_lane);
+            this.start_lane = Math.max(0, this.end_lane - 26);
         });
         this.key_triggered_button("A", ["g"], () => {
-            this.left += 2.5;
             this.move_left = true;
         });
         this.key_triggered_button("S", ["h"], () => {
-            this.move_backward = true;
+            if (this.distance_y !== 0) {
+                this.score -= 1;
+                this.move_backward = true;
+                this.end_lane -= 1;
+                this.start_lane = Math.max(0, this.start_lane - 1);
+            }
         });
         this.key_triggered_button("D", ["j"], () => {
-            this.right += 2.5;
             this.move_right = true;
         });
+    }
+
+    set_lane(lane) {
+        this.dir[lane] = (Math.random() > 0.5) ? 1 : -1;
+        this.speed[lane] = Math.random() + 0.5;
+        let choice = Math.floor(Math.random() * 8) + 1; // random between 1 and 8
+        this.safe[lane] = (choice === 1);
     }
 
     draw_road(context, program_state, lane, safe) {
@@ -184,9 +189,11 @@ export class Assignment2 extends Base_Scene {
         this.shapes.cube.draw(context, program_state, model_transform, this.materials.plastic.override({color: hex_color("#1a9ffa")}));
     }
 
-    draw_scooter(context, program_state, lane, dir, speed) {
-        let time = program_state.animation_time/1000;
-        let t = time % (52 / (speed * 10));
+    draw_scooter(context, program_state, lane) {
+        const dir = this.dir[lane];
+        const speed = this.speed[lane];
+        const time = program_state.animation_time/1000;
+        const t = time % (52 / (speed * 10));
         const x_trans = -10 + dir * (25 - speed * 10 * t);
         const y_trans = 2.5 * lane;
         let model_transform = Mat4.translation(x_trans, y_trans, 0);
@@ -196,6 +203,8 @@ export class Assignment2 extends Base_Scene {
     }
 
     collide(cube1_center_x, cube1_center_y, cube1_center_z, cube2_center_x, cube2_center_y){
+        console.log(cube1_center_x, cube1_center_y, cube1_center_z, cube2_center_x, cube2_center_y);
+
         // If one cube is on top of the other (z direction)
         if (cube1_center_z > 2)
             return false;
@@ -225,7 +234,7 @@ export class Assignment2 extends Base_Scene {
             // Collision detection (using the last frame due to display latency)
             for (let i = 0; i < this.last_scooter_pos.length; i += 2) {
                 if (this.collide(this.last_player_x, this.last_player_y, this.last_player_z, this.last_scooter_pos[i], this.last_scooter_pos[i+1])){
-                    alert('Collision detected!');
+                    alert('Collision detected.\nYour score is ' + this.score + '.');
                     this.dead = true;
                 }
             }
@@ -249,25 +258,21 @@ export class Assignment2 extends Base_Scene {
             return;
 
         // Set camera
-        let desired = Mat4.translation(0.3, -5, -22)
-            .times(Mat4.rotation(-0.25 * Math.PI, 1, 0, 0))
-            .times(Mat4.rotation(-0.14 * Math.PI, 0, 0, 1));
+        let desired = Mat4.translation(0.3, -5, -22).times(Mat4.rotation(-0.25 * Math.PI, 1, 0, 0)).times(Mat4.rotation(-0.14 * Math.PI, 0, 0, 1));
         desired = desired.times(Mat4.translation(0, -this.distance_y, 0));
         program_state.set_camera(desired);
 
         // Draw roads
-        for (let i = 0; i < num_lanes; i++) {
-            this.draw_road(context, program_state, i + 1, this.safe_roads[i]);
+        for (let i = this.start_lane; i <= this.end_lane; i++) {
+            this.draw_road(context, program_state, i + 1, this.safe[i]);
         }
 
         // Draw player and scooters
         this.draw_player(context, program_state);
         this.scooter_pos = [];
-        for (let i = 0; i < num_lanes; i++) {
-            if (!this.safe_roads[i]) {
-                let speed = this.speed[i];
-                let dir = this.lane[i];
-                this.draw_scooter(context, program_state, i + 1, dir, speed);
+        for (let i = this.start_lane; i <= this.end_lane; i++) {
+            if (!this.safe[i]) {
+                this.draw_scooter(context, program_state, i + 1);
             }
         }
 

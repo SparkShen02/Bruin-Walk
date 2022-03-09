@@ -4,6 +4,8 @@ const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene,
 } = tiny;
 
+const num_lanes = 19;
+
 class Cube extends Shape {
     constructor() {
         super("position", "normal",);
@@ -21,7 +23,6 @@ class Cube extends Shape {
             14, 13, 15, 14, 16, 17, 18, 17, 19, 18, 20, 21, 22, 21, 23, 22);
     }
 }
-
 
 class Base_Scene extends Scene {
     /**
@@ -71,6 +72,13 @@ export class Assignment2 extends Base_Scene {
      */
     constructor() {
         super();
+
+        this.safe_roads = [];
+        for (let i = 0; i < num_lanes; i++) {
+            let choice = Math.floor(Math.random() * 5) + 1; // random between 1 and 5
+            this.safe_roads[i] = (choice === 1);
+        }
+
         this.buffer_x = 0;
         this.buffer_y = 0;
         this.distance_x = 0;
@@ -89,23 +97,16 @@ export class Assignment2 extends Base_Scene {
         this.lane = [];
         this.speed = [];
         this.dead = false;
-
-        this.first_frame = true;
-
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < num_lanes; i++) {
             let a = Math.random();
-            if (a > 0.50){
-                this.lane[i] = 1                
-            }
-            else {
-                this.lane[i] = -1
-            }
+            this.lane[i] = (a > 0.5) ? 1 : -1;
         }
-
-        for (let i = 0; i < 50; i++) { 
+        for (let i = 0; i < num_lanes; i++) {
             let a = Math.random();
             this.speed[i] = a + 0.5;
         }
+
+        this.first_frame = true;
     }
 
     make_control_panel(program_state) {
@@ -126,8 +127,13 @@ export class Assignment2 extends Base_Scene {
         });
     }
 
-    draw_box(context, program_state, model_transform) {
-        const blue = hex_color("#1a9ffa");        
+    draw_road(context, program_state, lane, safe) {
+        let model_transform = Mat4.translation(0, 2.5 * lane, -1).times(Mat4.scale(50, 1, 0));
+        let color = (safe === true) ? hex_color("#00FF00") : hex_color("#ffffff");
+        this.shapes.cube.draw(context, program_state, model_transform, this.materials.plastic.override({color: color}));
+    }
+
+    draw_player(context, program_state) {
         if (this.move_forward === true || this.move_backward === true
             || this.move_left === true || this.move_right === true){
             let t = program_state.animation_time/1000;
@@ -136,16 +142,16 @@ export class Assignment2 extends Base_Scene {
             }
             
             if (this.move_forward === true){
-                this.distance_y += (t - this.start_time) * 1;
+                this.distance_y += (t - this.start_time);
             }
             else if (this.move_backward === true){
-                this.distance_y -= (t - this.start_time) * 1;
+                this.distance_y -= (t - this.start_time);
             }
             else if (this.move_right === true) {
-                this.distance_x += (t - this.start_time) * 1;
+                this.distance_x += (t - this.start_time);
             }
             else if (this.move_left === true) {
-                this.distance_x -= (t - this.start_time) * 1;
+                this.distance_x -= (t - this.start_time);
             }
             let count_x = Math.abs(this.distance_x - this.buffer_x);
             let count_y = Math.abs(this.distance_y - this.buffer_y);
@@ -174,29 +180,19 @@ export class Assignment2 extends Base_Scene {
             this.buffer_y = this.distance_y;
         }
 
-        model_transform = model_transform
-            .times(Mat4.translation(this.distance_x, this.distance_y, this.distance_z_x + this.distance_z_y));
-        this.shapes.cube.draw(context, program_state, model_transform, 
-                                this.materials.plastic.override({color: blue}));        
-        this.box_x = this.distance_x;
-        this.box_y = this.distance_y;
-        this.box_z = this.distance_z_x + this.distance_z_y;
-        return model_transform;
+        let model_transform = Mat4.translation(this.distance_x, this.distance_y, this.distance_z_x + this.distance_z_y);
+        this.shapes.cube.draw(context, program_state, model_transform, this.materials.plastic.override({color: hex_color("#1a9ffa")}));
     }
 
-    draw_scooter(context, program_state, model_transform, lane, dir, speed) {
-        const yellow = hex_color("#ffff00");
+    draw_scooter(context, program_state, lane, dir, speed) {
         let time = program_state.animation_time/1000;
         let t = time % (52 / (speed * 10));
         const x_trans = -10 + dir * (25 - speed * 10 * t);
         const y_trans = 2.5 * lane;
-        model_transform = Mat4.translation(x_trans, y_trans, 0);
-        this.shapes.cube.draw(context, program_state, model_transform, 
-                                this.materials.plastic.override({color: yellow}));
+        let model_transform = Mat4.translation(x_trans, y_trans, 0);
+        this.shapes.cube.draw(context, program_state, model_transform, this.materials.plastic.override({color: hex_color("#ffff00")}));
         this.scooter_pos.push(x_trans);
         this.scooter_pos.push(y_trans);
-        // console.log(this.scooter_pos);
-        return model_transform;
     }
 
     collide(cube1_center_x, cube1_center_y, cube1_center_z, cube2_center_x, cube2_center_y){
@@ -224,44 +220,61 @@ export class Assignment2 extends Base_Scene {
         return true;
     }
 
+    detect_collision() {
+        if (!this.first_frame) {
+            // Collision detection (using the last frame due to display latency)
+            for (let i = 0; i < this.last_scooter_pos.length; i += 2) {
+                if (this.collide(this.last_player_x, this.last_player_y, this.last_player_z, this.last_scooter_pos[i], this.last_scooter_pos[i+1])){
+                    alert('Collision detected!');
+                    this.dead = true;
+                }
+            }
+        }
+        else {
+            this.first_frame = false;
+        }
+    }
+
+    record_frame() {
+        this.last_player_x = this.distance_x;
+        this.last_player_y = this.distance_y;
+        this.last_player_z = this.distance_z_x + this.distance_z_y;
+        this.last_scooter_pos = this.scooter_pos;
+    }
+
     display(context, program_state) {
         super.display(context, program_state);
-        let model_transform = Mat4.identity();
-        // Example for drawing a cube, you can remove this line if needed
+
+        if (this.dead)
+            return;
+
+        // Set camera
         let desired = Mat4.translation(0.3, -5, -22)
-                            .times(Mat4.rotation(-0.25 * Math.PI, 1, 0, 0))
-                            .times(Mat4.rotation(-0.14 * Math.PI, 0, 0, 1));
+            .times(Mat4.rotation(-0.25 * Math.PI, 1, 0, 0))
+            .times(Mat4.rotation(-0.14 * Math.PI, 0, 0, 1));
         desired = desired.times(Mat4.translation(0, -this.distance_y, 0));
         program_state.set_camera(desired);
-        if (this.dead === false){
-            model_transform = this.draw_box(context, program_state, model_transform);
-            this.scooter_pos = [];
-            for (let i = 0; i < 50; i++) {
-                if (i !== 5){
-                    let speed = this.speed[i];
-                    let dir = this.lane[i];
-                    model_transform = this.draw_scooter(context, program_state, model_transform, i + 1, dir, speed);
-                }
-            }
 
-            if (!this.first_frame) {
-                // Collision detection (using the last frame due to display latency)
-                for (let i = 0; i < this.last_scooter_pos.length; i += 2) {
-                    if (this.collide(this.last_box_x, this.last_box_y, this.last_box_z, this.last_scooter_pos[i], this.last_scooter_pos[i+1])){
-                        alert('Collision detected!');
-                        this.dead = true;
-                    }
-                }
-            }
-            else {
-                this.first_frame = false;
-            }
-
-            // Record the last frame
-            this.last_box_x = this.box_x;
-            this.last_box_y = this.box_y;
-            this.last_box_z = this.box_z;
-            this.last_scooter_pos = this.scooter_pos;
+        // Draw roads
+        for (let i = 0; i < num_lanes; i++) {
+            this.draw_road(context, program_state, i + 1, this.safe_roads[i]);
         }
+
+        // Draw player and scooters
+        this.draw_player(context, program_state);
+        this.scooter_pos = [];
+        for (let i = 0; i < num_lanes; i++) {
+            if (!this.safe_roads[i]) {
+                let speed = this.speed[i];
+                let dir = this.lane[i];
+                this.draw_scooter(context, program_state, i + 1, dir, speed);
+            }
+        }
+
+        // Detect collision and possibly end the game
+        this.detect_collision();
+
+        // Record the last frame (collision detection uses the last frame due to display latency)
+        this.record_frame();
     }
 }

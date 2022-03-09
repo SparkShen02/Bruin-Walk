@@ -203,8 +203,6 @@ export class Assignment2 extends Base_Scene {
     }
 
     collide(cube1_center_x, cube1_center_y, cube1_center_z, cube2_center_x, cube2_center_y){
-        console.log(cube1_center_x, cube1_center_y, cube1_center_z, cube2_center_x, cube2_center_y);
-
         // If one cube is on top of the other (z direction)
         if (cube1_center_z > 2)
             return false;

@@ -94,7 +94,7 @@ export class Bruin_Walk extends Base_Scene {
 
         // Frame-related attribute
         this.first_frame = true;
-        this.light_position_y = 20;
+        this.light_position_y = 0;
     }
 
     make_control_panel() {
@@ -260,7 +260,7 @@ export class Bruin_Walk extends Base_Scene {
         program_state.set_camera(desired);
 
         // Set light
-        program_state.lights = [new Light(vec4(10, this.light_position_y, 5, 1), color(1, 1, 1, 1), 1000)];
+        program_state.lights = [new Light(vec4(20, this.light_position_y, 5, 1), color(1, 1, 1, 1), 1000)];
 
         // Draw roads
         for (let i = this.start_lane; i <= this.end_lane; i++) {

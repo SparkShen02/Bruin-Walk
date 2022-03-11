@@ -1,6 +1,6 @@
 import {defs, tiny} from './examples/common.js';
 
-import {Transforms_Sandbox} from "./examples/transforms-sandbox.js"
+import {Text_Demo} from "./examples/text-demo.js"
 import {Bruin_Walk} from "./bruin_walk.js"
 // Pull these names into this module's scope for convenience:
 const {
@@ -19,7 +19,7 @@ const {
 const Minimal_Webgl_Demo = defs.Minimal_Webgl_Demo;
 
 Object.assign(defs,
-            {Transforms_Sandbox}, {Bruin_Walk});
+            {Text_Demo}, {Bruin_Walk});
 
 // ******************** End extra step
 

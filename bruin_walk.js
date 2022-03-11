@@ -1,7 +1,8 @@
 import {defs, tiny} from './examples/common.js';
+import {Text_Line} from "./examples/text-demo.js"
 
 const {
-    Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene,
+    Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Texture, Scene,
 } = tiny;
 
 class Cube extends Shape {
@@ -33,13 +34,16 @@ class Base_Scene extends Scene {
         this.hover = this.swarm = false;
         // At the beginning of our program, load one of each of these shape definitions onto the GPU.
         this.shapes = {
-            'cube': new Cube(),
+            cube: new Cube(),
+            text: new Text_Line(35)
         };
 
         // *** Materials
         this.materials = {
             plastic: new Material(new defs.Phong_Shader(),
                 {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
+            text_image: new Material(new defs.Textured_Phong(1),
+                {ambient: 1, diffusivity: 0, specularity: 0, texture: new Texture("assets/text.png")})
         };
     }
 
@@ -111,7 +115,7 @@ export class Bruin_Walk extends Base_Scene {
             this.move_left = true;
         });
         this.key_triggered_button("S", ["h"], () => {
-            if (this.distance_y !== 0) {
+            if (this.distaynce_y !== 0) {
                 this.light_position_y -= 2.5
                 this.score -= 1;
                 this.move_backward = true;
@@ -129,6 +133,24 @@ export class Bruin_Walk extends Base_Scene {
         this.speed[lane] = Math.random() + 0.5;
         let choice = Math.floor(Math.random() * 8) + 1; // random between 1 and 8
         this.safe[lane] = (choice === 1);
+    }
+
+    draw_text(context, program_state) {
+        if (!this.dead) {
+            const score_text = "Current Score: " + this.score;
+            this.shapes.text.set_string(score_text, context.context);
+            let model_transform = Mat4.translation(-14, 12, 5);
+            model_transform = model_transform.times(Mat4.translation(0, this.distance_y, 0));
+            model_transform = model_transform.times(Mat4.rotation(0.44, 0, 0, 1).times(Mat4.rotation(0.9, 1, 0, 0).times(Mat4.scale(0.6, 0.6, 0.6))));
+            this.shapes.text.draw(context, program_state, model_transform, this.materials.text_image);
+        }
+        else {
+            const score_text = "Game has ended. Your score was " + this.score + "!";
+            this.shapes.text.set_string(score_text, context.context);
+            let model_transform = Mat4.translation(-1.7, 0.3, 0);
+            model_transform = model_transform.times(Mat4.scale(0.07, 0.07, 0.07));
+            this.shapes.text.draw(context, program_state, model_transform, this.materials.text_image);
+        }
     }
 
     draw_road(context, program_state, lane, safe) {
@@ -231,7 +253,6 @@ export class Bruin_Walk extends Base_Scene {
             // Collision detection (using the last frame due to display latency)
             for (let i = 0; i < this.last_scooter_pos.length; i += 2) {
                 if (this.collide(this.last_player_x, this.last_player_y, this.last_player_z, this.last_scooter_pos[i], this.last_scooter_pos[i+1])){
-                    alert('Collision detected.\nYour score is ' + this.score + '.');
                     this.dead = true;
                 }
             }
@@ -251,16 +272,24 @@ export class Bruin_Walk extends Base_Scene {
     display(context, program_state) {
         super.display(context, program_state);
 
-        if (this.dead)
-            return;
-
         // Set camera
-        let desired = Mat4.translation(0.3, -5, -22).times(Mat4.rotation(-0.25 * Math.PI, 1, 0, 0)).times(Mat4.rotation(-0.14 * Math.PI, 0, 0, 1));
-        desired = desired.times(Mat4.translation(0, -this.distance_y, 0));
-        program_state.set_camera(desired);
+        if (!this.dead) {
+            let desired = Mat4.translation(0.3, -5, -22).times(Mat4.rotation(-0.25 * Math.PI, 1, 0, 0)).times(Mat4.rotation(-0.14 * Math.PI, 0, 0, 1));
+            desired = desired.times(Mat4.translation(0, -this.distance_y, 0));
+            program_state.set_camera(desired);
+        }
+        else {
+            program_state.set_camera(Mat4.look_at(...Vector.cast([0, 0, 4], [0, 0, 0], [0, 1, 0])));
+        }
 
         // Set light
         program_state.lights = [new Light(vec4(20, this.light_position_y, 5, 1), color(1, 1, 1, 1), 1000)];
+
+        // Draw text that shows score
+        this.draw_text(context, program_state);
+
+        if (this.dead)
+            return;
 
         // Draw roads
         for (let i = this.start_lane; i <= this.end_lane; i++) {

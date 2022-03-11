@@ -50,7 +50,7 @@ class Base_Scene extends Scene {
     display(context, program_state) {
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
         if (!context.scratchpad.controls) {
-            this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
+            // this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
             program_state.set_camera(Mat4.translation(0.3, -5, -22)
                                      .times(Mat4.rotation(-0.25 * Math.PI, 1, 0, 0))
@@ -103,7 +103,7 @@ export class Bruin_Walk extends Base_Scene {
 
     make_control_panel() {
         // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
-        this.key_triggered_button("W", ["y"], () => {
+        this.key_triggered_button("Move Forward", ["w"], () => {
             if (!this.move_forward) {
                 this.move_forward = true;
                 this.light_position_y += 2.5
@@ -113,11 +113,11 @@ export class Bruin_Walk extends Base_Scene {
                 this.start_lane = Math.max(0, this.end_lane - 27);
             }
         });
-        this.key_triggered_button("A", ["g"], () => {
+        this.key_triggered_button("Move Left", ["a"], () => {
             this.move_left = true;
         });
-        this.key_triggered_button("S", ["h"], () => {
-            if (this.distaynce_y !== 0 && !this.move_backward) {
+        this.key_triggered_button("Move Back", ["s"], () => {
+            if (this.distance_y !== 0 && !this.move_backward) {
                 this.light_position_y -= 2.5
                 this.score -= 1;
                 this.move_backward = true;
@@ -125,7 +125,7 @@ export class Bruin_Walk extends Base_Scene {
                 this.start_lane = Math.max(0, this.start_lane - 1);
             }
         });
-        this.key_triggered_button("D", ["j"], () => {
+        this.key_triggered_button("Move Right", ["d"], () => {
             this.move_right = true;
         });
     }
@@ -139,9 +139,18 @@ export class Bruin_Walk extends Base_Scene {
 
     draw_text(context, program_state) {
         if (!this.dead) {
+            this.shapes.text.set_string("Welcome to Bruin Walk!", context.context);
+            let model_transform = Mat4.translation(-21.5, 0.5, -1).times(Mat4.scale(0.5, 0.5, 0));
+            this.shapes.text.draw(context, program_state, model_transform, this.materials.text_image);
+            this.shapes.text.set_string("Begin your adventure now,", context.context);
+            model_transform = model_transform.times(Mat4.translation(0, -2.5, 0));
+            this.shapes.text.draw(context, program_state, model_transform, this.materials.text_image);
+            this.shapes.text.set_string("and let's see how far you can get!", context.context);
+            model_transform = model_transform.times(Mat4.translation(0, -2.5, 0));
+            this.shapes.text.draw(context, program_state, model_transform, this.materials.text_image);
             const score_text = "Current Score: " + this.score;
             this.shapes.text.set_string(score_text, context.context);
-            let model_transform = Mat4.translation(-14, 12, 5);
+            model_transform = Mat4.translation(-14, 12, 5);
             model_transform = model_transform.times(Mat4.translation(0, this.distance_y, 0));
             model_transform = model_transform.times(Mat4.rotation(0.44, 0, 0, 1).times(Mat4.rotation(0.9, 1, 0, 0).times(Mat4.scale(0.6, 0.6, 0.6))));
             this.shapes.text.draw(context, program_state, model_transform, this.materials.text_image);
@@ -290,11 +299,11 @@ export class Bruin_Walk extends Base_Scene {
         let scooter_bot_right_x = scooter_center_x + 1.7;
         let scooter_bot_right_y = scooter_center_y - 1;
 
-        // If one cube is on the left of the other (x direction)
+        // If one object is on the left of the other (x direction)
         if (player_top_left_x >= scooter_bot_right_x || scooter_top_left_x >= player_bot_right_x)
             return false;
 
-        // If one cube is above the other (y direction)
+        // If one object is above the other (y direction)
         if (player_bot_right_y >= scooter_top_left_y || scooter_bot_right_y >= player_top_left_y)
             return false;
 
@@ -336,7 +345,7 @@ export class Bruin_Walk extends Base_Scene {
         }
 
         // Set light
-        program_state.lights = [new Light(vec4(20, this.light_position_y, 5, 1), color(1, 1, 1, 1), 1000)];
+        program_state.lights = [new Light(vec4(15, this.light_position_y, 5, 1), color(1, 1, 1, 1), 1000)];
 
         // Draw text
         this.draw_text(context, program_state);

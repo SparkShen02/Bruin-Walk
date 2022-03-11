@@ -132,7 +132,7 @@ export class Bruin_Walk extends Base_Scene {
 
     set_lane(lane) {
         this.dir[lane] = (Math.random() > 0.5) ? 1 : -1;
-        this.speed[lane] = Math.random() + 0.5;
+        this.speed[lane] = Math.random() + 0.4;
         let choice = Math.floor(Math.random() * 8) + 1; // random between 1 and 8
         this.safe[lane] = (choice === 1);
     }
@@ -168,7 +168,7 @@ export class Bruin_Walk extends Base_Scene {
             if (this.start_time === -1){
                 this.start_time = t;
             }
-            
+
             if (this.move_forward === true){
                 this.distance_y += (t - this.start_time);
             }
@@ -209,7 +209,24 @@ export class Bruin_Walk extends Base_Scene {
         }
 
         let model_transform = Mat4.translation(this.distance_x, this.distance_y, this.distance_z_x + this.distance_z_y);
-        this.shapes.cube.draw(context, program_state, model_transform, this.materials.plastic.override({color: hex_color("#1a9ffa")}));
+        let body_transform = model_transform.times(Mat4.scale(0.7, 1, 0.5))
+        let head_transform = model_transform.times(Mat4.translation(0, 0.4, 0.8)).times(Mat4.scale(0.5, 0.4, 0.45))
+        let feet1_transform = model_transform.times(Mat4.translation(-0.4, -0.7, -0.8)).times(Mat4.scale(0.2, 0.2, 0.3))
+        let feet2_transform = model_transform.times(Mat4.translation(0.4, -0.7, -0.8)).times(Mat4.scale(0.2, 0.2, 0.3))
+        let feet3_transform = model_transform.times(Mat4.translation(-0.4, 0.7, -0.8)).times(Mat4.scale(0.2, 0.2, 0.3))
+        let feet4_transform = model_transform.times(Mat4.translation(0.4, 0.7, -0.8)).times(Mat4.scale(0.2, 0.2, 0.3))
+        let ear1_transform = model_transform.times(Mat4.translation(0.35, 0.4, 1.3)).times(Mat4.scale(0.13, 0.13, 0.13))
+        let ear2_transform = model_transform.times(Mat4.translation(-0.35, 0.4, 1.3)).times(Mat4.scale(0.13, 0.13, 0.13))
+        let beak_transform = model_transform.times(Mat4.translation(0, 0.8, 0.8)).times(Mat4.scale(0.2, 0.4, 0.2))
+        this.shapes.cube.draw(context, program_state, body_transform, this.materials.plastic.override({color: hex_color("#80471c")}));
+        this.shapes.cube.draw(context, program_state, head_transform, this.materials.plastic.override({color: hex_color("#80471c")}));
+        this.shapes.cube.draw(context, program_state, feet1_transform, this.materials.plastic.override({color: hex_color("#80471c")}));
+        this.shapes.cube.draw(context, program_state, feet2_transform, this.materials.plastic.override({color: hex_color("#80471c")}));
+        this.shapes.cube.draw(context, program_state, feet3_transform, this.materials.plastic.override({color: hex_color("#80471c")}));
+        this.shapes.cube.draw(context, program_state, feet4_transform, this.materials.plastic.override({color: hex_color("#80471c")}));
+        this.shapes.cube.draw(context, program_state, ear1_transform, this.materials.plastic.override({color: hex_color("#80471c")}));
+        this.shapes.cube.draw(context, program_state, ear2_transform, this.materials.plastic.override({color: hex_color("#80471c")}));
+        this.shapes.cube.draw(context, program_state, beak_transform, this.materials.plastic.override({color: hex_color("#CD7F32")}));
     }
 
     draw_scooter(context, program_state, lane) {
@@ -217,34 +234,68 @@ export class Bruin_Walk extends Base_Scene {
         const speed = this.speed[lane];
         const time = program_state.animation_time/1000;
         const t = time % (52 / (speed * 10));
-        const x_trans = -10 + dir * (25 - speed * 10 * t);
+        const x_trans = -10 + dir * (25 - speed * 10 * t) * 1.4;
         const y_trans = 2.5 * lane;
+
         let model_transform = Mat4.translation(x_trans, y_trans, 0);
-        this.shapes.cube.draw(context, program_state, model_transform, this.materials.plastic.override({color: hex_color("#ffff00")}));
+        let platform_transform = model_transform.times(Mat4.translation(0, 0, -0.3)).times(Mat4.scale(1.7, 0.5, 0.2))
+        let handle_transform = model_transform.times(Mat4.translation(-1.5 * dir, 0, 1.9)).times(Mat4.scale(0.2, 1, 0.2))
+        let stick_transform = model_transform.times(Mat4.translation(-1.5 * dir, 0, 0.83)).times(Mat4.scale(0.2, 0.2, 0.92))
+        let wheel1_transform = model_transform.times(Mat4.translation(-1.3 * dir, 0, -0.8)).times(Mat4.scale(0.4, 0.15, 0.3))
+        let wheel2_transform = model_transform.times(Mat4.translation(1.2 * dir, 0, -0.8)).times(Mat4.scale(0.4, 0.15, 0.3))
+        model_transform = model_transform.times(Mat4.translation(0.3 * dir, 0, 1))
+        let body_transform = model_transform.times(Mat4.rotation(Math.PI/2 * dir, 0, 0, 1)).times(Mat4.scale(0.7, 1, 0.5))
+        let head_transform = model_transform.times(Mat4.rotation(Math.PI/2  * dir, 0, 0, 1)).times(Mat4.translation(0, 0.4, 0.8)).times(Mat4.scale(0.5, 0.4, 0.45))
+        let feet1_transform = model_transform.times(Mat4.rotation(Math.PI/2 * dir, 0, 0, 1)).times(Mat4.translation(-0.4, -0.7, -0.8)).times(Mat4.scale(0.2, 0.2, 0.3))
+        let feet2_transform = model_transform.times(Mat4.rotation(Math.PI/2  * dir, 0, 0, 1)).times(Mat4.translation(0.4, -0.7, -0.8)).times(Mat4.scale(0.2, 0.2, 0.3))
+        let feet3_transform = model_transform.times(Mat4.rotation(Math.PI/2 * dir, 0, 0, 1)).times(Mat4.translation(-0.4, 0.7, -0.8)).times(Mat4.scale(0.2, 0.2, 0.3))
+        let feet4_transform = model_transform.times(Mat4.rotation(Math.PI/2  * dir, 0, 0, 1)).times(Mat4.translation(0.4, 0.7, -0.8)).times(Mat4.scale(0.2, 0.2, 0.3))
+        let ear1_transform = model_transform.times(Mat4.rotation(Math.PI/2  * dir, 0, 0, 1)).times(Mat4.translation(0.35, 0.4, 1.3)).times(Mat4.scale(0.13, 0.13, 0.13))
+        let ear2_transform = model_transform.times(Mat4.rotation(Math.PI/2  * dir, 0, 0, 1)).times(Mat4.translation(-0.35, 0.4, 1.3)).times(Mat4.scale(0.13, 0.13, 0.13))
+        let beak_transform = model_transform.times(Mat4.rotation(Math.PI/2 * dir, 0, 0, 1)).times(Mat4.translation(0, 0.8, 0.8)).times(Mat4.scale(0.2, 0.4, 0.2))
+        this.shapes.cube.draw(context, program_state, body_transform, this.materials.plastic.override({color: hex_color("#03254c")}));
+        this.shapes.cube.draw(context, program_state, head_transform, this.materials.plastic.override({color: hex_color("#03254c")}));
+        this.shapes.cube.draw(context, program_state, feet1_transform, this.materials.plastic.override({color: hex_color("#03254c")}));
+        this.shapes.cube.draw(context, program_state, feet2_transform, this.materials.plastic.override({color: hex_color("#03254c")}));
+        this.shapes.cube.draw(context, program_state, feet3_transform, this.materials.plastic.override({color: hex_color("#03254c")}));
+        this.shapes.cube.draw(context, program_state, feet4_transform, this.materials.plastic.override({color: hex_color("#03254c")}));
+        this.shapes.cube.draw(context, program_state, ear1_transform, this.materials.plastic.override({color: hex_color("#03254c")}));
+        this.shapes.cube.draw(context, program_state, ear2_transform, this.materials.plastic.override({color: hex_color("#03254c")}));
+        this.shapes.cube.draw(context, program_state, beak_transform, this.materials.plastic.override({color: hex_color("#03254c")}));
+        this.shapes.cube.draw(context, program_state, platform_transform, this.materials.plastic.override({color: hex_color("#757575")}));
+        this.shapes.cube.draw(context, program_state, handle_transform, this.materials.plastic.override({color: hex_color("#757575")}));
+        this.shapes.cube.draw(context, program_state, stick_transform, this.materials.plastic.override({color: hex_color("#d8d8d8")}));
+        this.shapes.cube.draw(context, program_state, wheel1_transform, this.materials.plastic.override({color: hex_color("#757575")}));
+        this.shapes.cube.draw(context, program_state, wheel2_transform, this.materials.plastic.override({color: hex_color("#757575")}));
+
         this.scooter_pos.push(x_trans);
         this.scooter_pos.push(y_trans);
     }
 
-    collide(cube1_center_x, cube1_center_y, cube1_center_z, cube2_center_x, cube2_center_y){
-        // If one cube is on top of the other (z direction)
-        if (cube1_center_z > 2)
-            return false;
+    draw_tree(context, program_state, lane){
+        let model_transform = Mat4.translation(-10, 2.5 * lane, 0);
+        let trunk_transform = model_transform.times(Mat4.translation(0, 0, -0.5)).times(Mat4.scale(0.5, 0.5, 0.5))
+        let leaf_transform = model_transform.times(Mat4.translation(0, 0, 1.32)).times(Mat4.scale(1, 1, 1.3))
+        this.shapes.cube.draw(context, program_state, trunk_transform, this.materials.plastic.override({color: hex_color("#80471c")}));
+        this.shapes.cube.draw(context, program_state, leaf_transform, this.materials.plastic.override({color: hex_color("#154F30")}));
+    }
 
-        let cube1_top_left_x = cube1_center_x - 1;
-        let cube1_top_left_y = cube1_center_y + 1;
-        let cube1_bot_right_x = cube1_center_x + 1;
-        let cube1_bot_right_y = cube1_center_y - 1;
-        let cube2_top_left_x = cube2_center_x - 1;
-        let cube2_top_left_y = cube2_center_y + 1;
-        let cube2_bot_right_x = cube2_center_x + 1;
-        let cube2_bot_right_y = cube2_center_y - 1;
+    collide(player_center_x, player_center_y, player_center_z, scooter_center_x, scooter_center_y){
+        let player_top_left_x = player_center_x - 0.7;
+        let player_top_left_y = player_center_y + 1;
+        let player_bot_right_x = player_center_x + 0.7;
+        let player_bot_right_y = player_center_y - 1;
+        let scooter_top_left_x = scooter_center_x - 1.7;
+        let scooter_top_left_y = scooter_center_y + 1;
+        let scooter_bot_right_x = scooter_center_x + 1.7;
+        let scooter_bot_right_y = scooter_center_y - 1;
 
         // If one cube is on the left of the other (x direction)
-        if (cube1_top_left_x >= cube2_bot_right_x || cube2_top_left_x >= cube1_bot_right_x)
+        if (player_top_left_x >= scooter_bot_right_x || scooter_top_left_x >= player_bot_right_x)
             return false;
 
         // If one cube is above the other (y direction)
-        if (cube1_bot_right_y >= cube2_top_left_y || cube2_bot_right_y >= cube1_top_left_y)
+        if (player_bot_right_y >= scooter_top_left_y || scooter_bot_right_y >= player_top_left_y)
             return false;
 
         return true;
@@ -287,7 +338,7 @@ export class Bruin_Walk extends Base_Scene {
         // Set light
         program_state.lights = [new Light(vec4(20, this.light_position_y, 5, 1), color(1, 1, 1, 1), 1000)];
 
-        // Draw text that shows score
+        // Draw text
         this.draw_text(context, program_state);
 
         if (this.dead)
@@ -298,12 +349,15 @@ export class Bruin_Walk extends Base_Scene {
             this.draw_road(context, program_state, i + 1, this.safe[i]);
         }
 
-        // Draw player and scooters
+        // Draw player, scooters, and trees
         this.draw_player(context, program_state);
         this.scooter_pos = [];
         for (let i = this.start_lane; i <= this.end_lane; i++) {
             if (!this.safe[i]) {
-                this.draw_scooter(context, program_state, i + 1);
+                this.draw_scooter(context, program_state, i+1);
+            }
+            else {
+                this.draw_tree(context, program_state, i+1);
             }
         }
 

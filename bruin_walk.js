@@ -104,18 +104,20 @@ export class Bruin_Walk extends Base_Scene {
     make_control_panel() {
         // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
         this.key_triggered_button("W", ["y"], () => {
-            this.move_forward = true;
-            this.light_position_y += 2.5
-            this.score += 1;
-            this.end_lane += 1;
-            this.set_lane(this.end_lane);
-            this.start_lane = Math.max(0, this.end_lane - 27);
+            if (!this.move_forward) {
+                this.move_forward = true;
+                this.light_position_y += 2.5
+                this.score += 1;
+                this.end_lane += 1;
+                this.set_lane(this.end_lane);
+                this.start_lane = Math.max(0, this.end_lane - 27);
+            }
         });
         this.key_triggered_button("A", ["g"], () => {
             this.move_left = true;
         });
         this.key_triggered_button("S", ["h"], () => {
-            if (this.distaynce_y !== 0) {
+            if (this.distaynce_y !== 0 && !this.move_backward) {
                 this.light_position_y -= 2.5
                 this.score -= 1;
                 this.move_backward = true;

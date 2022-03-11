@@ -4,6 +4,8 @@ import {Text_Line} from "./examples/text-demo.js"
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Texture, Scene,
 } = tiny;
+const left_bound = -23;
+const right_bound = 12;
 
 class Cube extends Shape {
     constructor() {
@@ -62,12 +64,6 @@ class Base_Scene extends Scene {
 }
 
 export class Bruin_Walk extends Base_Scene {
-    /**
-     * This Scene object can be added to any display canvas.
-     * We isolate that code so it can be experimented with on its own.
-     * This gives you a very small code sandbox for editing a simple scene, and for
-     * experimenting with matrix transformations.
-     */
     constructor() {
         super();
 
@@ -77,7 +73,6 @@ export class Bruin_Walk extends Base_Scene {
         this.safe = [];
         this.dir = [];
         this.speed = [];
-        this.tree_num = [];
         this.tree_pos = [];
         for (let i = this.start_lane; i <= this.end_lane; i++) {
             this.set_lane(i);
@@ -116,7 +111,9 @@ export class Bruin_Walk extends Base_Scene {
             }
         });
         this.key_triggered_button("Move Left", ["a"], () => {
-            this.move_left = true;
+            if (this.distance_x > left_bound) {
+                this.move_left = true;
+            }
         });
         this.key_triggered_button("Move Back", ["s"], () => {
             if (this.distance_y !== 0 && !this.move_backward) {
@@ -128,7 +125,9 @@ export class Bruin_Walk extends Base_Scene {
             }
         });
         this.key_triggered_button("Move Right", ["d"], () => {
-            this.move_right = true;
+            if (this.distance_x < right_bound) {
+                this.move_right = true;
+            }
         });
     }
 
@@ -137,13 +136,7 @@ export class Bruin_Walk extends Base_Scene {
         this.speed[lane] = Math.random() + 0.4;
         let choice = Math.floor(Math.random() * 8) + 1; // random between 1 and 8
         this.safe[lane] = (choice === 1);
-        let pos = Math.floor(Math.random() * 15) - 5;
-        let num = Math.floor(Math.random() * 10) + 5;
-        console.log(num);
-        for (let i = 0; i < 10; i++){
-                this.tree_num.push(num);
-        }
-        this.tree_pos[lane] = pos;
+        this.tree_pos[lane] = Math.floor(Math.random() * (right_bound - left_bound + 1)) + left_bound; // random between left_bound and right_bound;
     }
 
     draw_text(context, program_state) {
@@ -290,30 +283,30 @@ export class Bruin_Walk extends Base_Scene {
         this.scooter_pos.push(y_trans);
     }
 
-    draw_tree(context, program_state, lane, pos){
-        let model_transform = Mat4.translation(-10 + pos * 2.5, 2.5 * lane, 0);
+    draw_tree(context, program_state, lane){
+        let model_transform = Mat4.translation(this.tree_pos[lane], 2.5 * lane, 0);
         let trunk_transform = model_transform.times(Mat4.translation(0, 0, -0.5)).times(Mat4.scale(0.5, 0.5, 0.5))
         let leaf_transform = model_transform.times(Mat4.translation(0, 0, 1.32)).times(Mat4.scale(1, 1, 1.3))
         this.shapes.cube.draw(context, program_state, trunk_transform, this.materials.plastic.override({color: hex_color("#80471c")}));
         this.shapes.cube.draw(context, program_state, leaf_transform, this.materials.plastic.override({color: hex_color("#154F30")}));
     }
 
-    collide(player_center_x, player_center_y, player_center_z, scooter_center_x, scooter_center_y){
+    collide(player_center_x, player_center_y, player_center_z, object_center_x, object_center_y){
         let player_top_left_x = player_center_x - 0.7;
         let player_top_left_y = player_center_y + 1;
         let player_bot_right_x = player_center_x + 0.7;
         let player_bot_right_y = player_center_y - 1;
-        let scooter_top_left_x = scooter_center_x - 1.7;
-        let scooter_top_left_y = scooter_center_y + 1;
-        let scooter_bot_right_x = scooter_center_x + 1.7;
-        let scooter_bot_right_y = scooter_center_y - 1;
+        let object_top_left_x = object_center_x - 1.7;
+        let object_top_left_y = object_center_y + 1;
+        let object_bot_right_x = object_center_x + 1.7;
+        let object_bot_right_y = object_center_y - 1;
 
         // If one object is on the left of the other (x direction)
-        if (player_top_left_x >= scooter_bot_right_x || scooter_top_left_x >= player_bot_right_x)
+        if (player_top_left_x >= object_bot_right_x || object_top_left_x >= player_bot_right_x)
             return false;
 
         // If one object is above the other (y direction)
-        if (player_bot_right_y >= scooter_top_left_y || scooter_bot_right_y >= player_top_left_y)
+        if (player_bot_right_y >= object_top_left_y || object_bot_right_y >= player_top_left_y)
             return false;
 
         return true;
@@ -372,13 +365,10 @@ export class Bruin_Walk extends Base_Scene {
         this.scooter_pos = [];
         for (let i = this.start_lane; i <= this.end_lane; i++) {
             if (!this.safe[i]) {
-                // this.draw_tree(context, program_state, i+1, this.tree_pos[i]);
                 this.draw_scooter(context, program_state, i+1);
             }
             else {
-                for (let j = 0; j < this.tree_num[i]; j++){
-                     this.draw_tree(context, program_state, i+1, this.tree_pos[2 * i + j]);
-                }      
+                this.draw_tree(context, program_state, i+1);
             }
         }
 

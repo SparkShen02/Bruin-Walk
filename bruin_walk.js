@@ -77,6 +77,8 @@ export class Bruin_Walk extends Base_Scene {
         this.safe = [];
         this.dir = [];
         this.speed = [];
+        this.tree_num = [];
+        this.tree_pos = [];
         for (let i = this.start_lane; i <= this.end_lane; i++) {
             this.set_lane(i);
         }
@@ -135,6 +137,13 @@ export class Bruin_Walk extends Base_Scene {
         this.speed[lane] = Math.random() + 0.4;
         let choice = Math.floor(Math.random() * 8) + 1; // random between 1 and 8
         this.safe[lane] = (choice === 1);
+        let pos = Math.floor(Math.random() * 15) - 5;
+        let num = Math.floor(Math.random() * 10) + 5;
+        console.log(num);
+        for (let i = 0; i < 10; i++){
+                this.tree_num.push(num);
+        }
+        this.tree_pos[lane] = pos;
     }
 
     draw_text(context, program_state) {
@@ -281,8 +290,8 @@ export class Bruin_Walk extends Base_Scene {
         this.scooter_pos.push(y_trans);
     }
 
-    draw_tree(context, program_state, lane){
-        let model_transform = Mat4.translation(-10, 2.5 * lane, 0);
+    draw_tree(context, program_state, lane, pos){
+        let model_transform = Mat4.translation(-10 + pos * 2.5, 2.5 * lane, 0);
         let trunk_transform = model_transform.times(Mat4.translation(0, 0, -0.5)).times(Mat4.scale(0.5, 0.5, 0.5))
         let leaf_transform = model_transform.times(Mat4.translation(0, 0, 1.32)).times(Mat4.scale(1, 1, 1.3))
         this.shapes.cube.draw(context, program_state, trunk_transform, this.materials.plastic.override({color: hex_color("#80471c")}));
@@ -363,10 +372,13 @@ export class Bruin_Walk extends Base_Scene {
         this.scooter_pos = [];
         for (let i = this.start_lane; i <= this.end_lane; i++) {
             if (!this.safe[i]) {
+                // this.draw_tree(context, program_state, i+1, this.tree_pos[i]);
                 this.draw_scooter(context, program_state, i+1);
             }
             else {
-                this.draw_tree(context, program_state, i+1);
+                for (let j = 0; j < this.tree_num[i]; j++){
+                     this.draw_tree(context, program_state, i+1, this.tree_pos[2 * i + j]);
+                }      
             }
         }
 

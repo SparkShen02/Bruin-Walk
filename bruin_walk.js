@@ -101,7 +101,7 @@ export class Bruin_Walk extends Base_Scene {
     make_control_panel() {
         // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
         this.key_triggered_button("Move Forward", ["w"], () => {
-            if (!this.move_forward) {
+            if (!this.move_forward && !this.collide_with_tree(this.distance_x, this.distance_y + 2.5)) {
                 this.move_forward = true;
                 this.light_position_y += 2.5
                 this.score += 1;
@@ -111,12 +111,12 @@ export class Bruin_Walk extends Base_Scene {
             }
         });
         this.key_triggered_button("Move Left", ["a"], () => {
-            if (this.distance_x > left_bound) {
+            if (this.distance_x > left_bound && !this.collide_with_tree(this.distance_x - 2.5, this.distance_y)) {
                 this.move_left = true;
             }
         });
         this.key_triggered_button("Move Back", ["s"], () => {
-            if (this.distance_y !== 0 && !this.move_backward) {
+            if (this.distance_y !== 0 && !this.move_backward && !this.collide_with_tree(this.distance_x, this.distance_y - 2.5)) {
                 this.light_position_y -= 2.5
                 this.score -= 1;
                 this.move_backward = true;
@@ -125,7 +125,7 @@ export class Bruin_Walk extends Base_Scene {
             }
         });
         this.key_triggered_button("Move Right", ["d"], () => {
-            if (this.distance_x < right_bound) {
+            if (this.distance_x < right_bound && !this.collide_with_tree(this.distance_x + 2.5, this.distance_y)) {
                 this.move_right = true;
             }
         });
@@ -136,7 +136,8 @@ export class Bruin_Walk extends Base_Scene {
         this.speed[lane] = Math.random() + 0.4;
         let choice = Math.floor(Math.random() * 8) + 1; // random between 1 and 8
         this.safe[lane] = (choice === 1);
-        this.tree_pos[lane] = Math.floor(Math.random() * (right_bound - left_bound + 1)) + left_bound; // random between left_bound and right_bound;
+        const x_pos = Math.floor(Math.random() * (right_bound - left_bound + 1)) + left_bound; // random between left_bound and right_bound
+        this.tree_pos[lane] = Math.round(x_pos / 2.5) * 2.5;
     }
 
     draw_text(context, program_state) {
@@ -291,7 +292,7 @@ export class Bruin_Walk extends Base_Scene {
         this.shapes.cube.draw(context, program_state, leaf_transform, this.materials.plastic.override({color: hex_color("#154F30")}));
     }
 
-    collide(player_center_x, player_center_y, player_center_z, object_center_x, object_center_y){
+    collide(player_center_x, player_center_y, object_center_x, object_center_y){
         let player_top_left_x = player_center_x - 0.7;
         let player_top_left_y = player_center_y + 1;
         let player_bot_right_x = player_center_x + 0.7;
@@ -312,11 +313,11 @@ export class Bruin_Walk extends Base_Scene {
         return true;
     }
 
-    detect_collision() {
+    collide_with_scooters() {
         if (!this.first_frame) {
-            // Collision detection (using the last frame due to display latency)
+            // Collision detection with scooters (using the last frame due to display latency)
             for (let i = 0; i < this.last_scooter_pos.length; i += 2) {
-                if (this.collide(this.last_player_x, this.last_player_y, this.last_player_z, this.last_scooter_pos[i], this.last_scooter_pos[i+1])){
+                if (this.collide(this.last_player_x, this.last_player_y, this.last_scooter_pos[i], this.last_scooter_pos[i+1])){
                     this.dead = true;
                 }
             }
@@ -326,10 +327,14 @@ export class Bruin_Walk extends Base_Scene {
         }
     }
 
+    collide_with_tree(player_center_x, player_center_y) {
+        const lane = player_center_y / 2.5;
+        return this.safe[lane-1] && player_center_x === this.tree_pos[lane];
+    }
+
     record_frame() {
         this.last_player_x = this.distance_x;
         this.last_player_y = this.distance_y;
-        this.last_player_z = this.distance_z_x + this.distance_z_y;
         this.last_scooter_pos = this.scooter_pos;
     }
 
@@ -372,8 +377,8 @@ export class Bruin_Walk extends Base_Scene {
             }
         }
 
-        // Detect collision and possibly end the game
-        this.detect_collision();
+        // Detect collision with scooters and possibly end the game
+        this.collide_with_scooters();
 
         // Record the last frame (collision detection uses the last frame due to display latency)
         this.record_frame();

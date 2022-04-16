@@ -1,7 +1,7 @@
 import {defs, tiny} from './examples/common.js';
 
 import {Text_Demo} from "./examples/text-demo.js"
-import {Bruin_Walk} from "./bruin_walk.js"
+import {Bruin_Walk} from "./bruin-walk.js"
 // Pull these names into this module's scope for convenience:
 const {
     Vector, Vector3, vec, vec3, vec4, color, Matrix, Mat4, Light, Shape, Material, Shader, Texture, Scene,
@@ -22,8 +22,6 @@ Object.assign(defs,
             {Text_Demo}, {Bruin_Walk});
 
 // ******************** End extra step
-
-// (Can define Main_Scene's class here)
 
 const Main_Scene = Bruin_Walk;
 const Additional_Scenes = [];

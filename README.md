@@ -7,8 +7,8 @@ We used [tiny-graphics-js](https://github.com/encyclopedia-of-code/tiny-graphics
 
 ## Run
 (1) Clone or download this repository. <br>
-(2) Run a fake server by opening host.bat if you're using Windows, or host.command if you're using MacOS. On MacOS, you might get a security warning. If so, open terminal, navigate to the directory, run ```chmod u+x host.command```, and then open host.command again. <br>
-(3) Open Google Chrome and navigate to http://localhost:8200/. 
+(2) Run a fake server by opening host.bat if you're using Windows, or host.command if you're using MacOS. On MacOS, you might get a security warning. If so, open the terminal, navigate to the directory, run ```chmod u+x host.command```, and then open host.command again. <br>
+(3) Open your web browser and navigate to http://localhost:8200/. 
 
 ## Controls
 The keyboard controls are straightforward. You may use the 'w' key to move forward, the 's' key to move back, the 'a' key to move left, and the 'd' key to move right.
